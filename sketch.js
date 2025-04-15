@@ -12,7 +12,7 @@ let groundY;
 // --- Key Mechanic ---
 let possibleKeys = 'abcdefghijklmnopqrstuvwxyz'; // Keys obstacles can require
 let keyPressZoneFactor = 2.5; // How many player widths ahead the key must be pressed
-let lastCorrectPressFrame = -100; // Track successful presses for feedback
+let lastCorrectPressFrame = -100; // Track successful presses for feedback (used for obstacle color change)
 let currentTargetObstacle = null; // The obstacle player needs to address
 
 // --- Style ---
@@ -35,7 +35,7 @@ function setup() {
     brown: color(165, 42, 42),
     skin: color(255, 218, 185),
     white: color(255),
-    black: color(0),
+    black: color(0), // Black added/confirmed
   };
   environmentColors = {
     sky: color(92, 148, 252),
@@ -74,8 +74,8 @@ function draw() {
     rect(hill.x, hill.y, hill.w, hill.h);
     hill.x -= gameSpeed * 0.2; // Slower scroll speed
     if (hill.x < -hill.w) {
-       hills.splice(i, 1);
-       spawnHill(width); // Spawn a new one off-screen right
+        hills.splice(i, 1);
+        spawnHill(width); // Spawn a new one off-screen right
     }
   }
 
@@ -89,8 +89,8 @@ function draw() {
     rect(cloud.x - cloud.w * 0.2, cloud.y + cloud.h * 0.1, cloud.w * 0.6, cloud.h * 0.8);
     cloud.x -= gameSpeed * 0.5; // Medium scroll speed
      if (cloud.x < -cloud.w * 1.5) {
-       clouds.splice(i, 1);
-       spawnCloud(width); // Spawn new one off-screen right
+        clouds.splice(i, 1);
+        spawnCloud(width); // Spawn new one off-screen right
     }
   }
 
@@ -98,14 +98,14 @@ function draw() {
   fill(environmentColors.ground);
   rect(0, groundY, width, height - groundY);
   // Add simple block pattern to ground
-   fill(205, 133, 63); // Slightly darker brown
-   for(let i = 0; i < width + 40; i+= 40){
-        let xPos = (i - (frameCount * gameSpeed * 0.8) % 40);
-        rect(xPos, groundY, 20, 10);
-        rect(xPos + 20, groundY+10, 20, 10);
-        rect(xPos, groundY+20, 20, 10);
-         rect(xPos + 20, groundY+30, 20, 10);
-   }
+    fill(205, 133, 63); // Slightly darker brown
+    for(let i = 0; i < width + 40; i+= 40){
+       let xPos = (i - (frameCount * gameSpeed * 0.8) % 40);
+       rect(xPos, groundY, 20, 10);
+       rect(xPos + 20, groundY+10, 20, 10);
+       rect(xPos, groundY+20, 20, 10);
+        rect(xPos + 20, groundY+30, 20, 10);
+    }
 
   // --- Game States ---
   if (gameState === 'start') {
@@ -128,11 +128,11 @@ function draw() {
       // Find the closest *uncleared* obstacle within the "press zone"
       let activationDist = player.w * keyPressZoneFactor;
       if (!obs.cleared && obs.x < player.x + activationDist && obs.x + obs.w > player.x - player.w/2 && !targetFound) {
-         currentTargetObstacle = obs;
-         obs.isTarget = true; // Highlight the target obstacle
-         targetFound = true;
+          currentTargetObstacle = obs;
+          obs.isTarget = true; // Highlight the target obstacle
+          targetFound = true;
       } else {
-          obs.isTarget = false;
+           obs.isTarget = false;
       }
 
       // --- Collision Check ---
@@ -144,11 +144,11 @@ function draw() {
       // --- Remove Off-screen Obstacles ---
       if (obs.isOffscreen()) {
         if (!obs.cleared) {
-           // If an obstacle scrolls off uncleared (player missed the key press window)
-           gameOver('missed');
+            // If an obstacle scrolls off uncleared (player missed the key press window)
+            gameOver('missed');
         } else {
-           // Successfully cleared obstacle is off screen
-           // score++; // Score incremented on successful key press now
+            // Successfully cleared obstacle is off screen
+            // score++; // Score incremented on successful key press now
         }
         obstacles.splice(i, 1);
       }
@@ -158,18 +158,20 @@ function draw() {
     // Spawn when the last obstacle is far enough away
     if (obstacles.length === 0 || (obstacles.length < 5 && obstacles[obstacles.length - 1].x < width - random(200, 500))) {
        if (random(1) < 0.015 * gameSpeed) { // Spawn rate increases slightly with speed
-            spawnObstacle();
+           spawnObstacle();
        }
     }
 
     // --- Info Display ---
     displayInfo();
 
-     // --- Correct Key Press Visual Feedback ---
-     if (frameCount - lastCorrectPressFrame < 15) { // Show green flash for 15 frames
-        fill(0, 255, 0, 100);
-        rect(0, 0, width, height);
-     }
+    // --- Correct Key Press Visual Feedback ---
+    /* // Comentado para remover a piscada verde
+    if (frameCount - lastCorrectPressFrame < 15) { // Show green flash for 15 frames
+       fill(0, 255, 0, 100);
+       rect(0, 0, width, height);
+    }
+    */ // Fim do comentário
 
 
   } else if (gameState === 'gameOver') {
@@ -185,8 +187,8 @@ function draw() {
 function keyPressed() {
   // Start game from start screen
   if (gameState === 'start' && key) { // Any key to start
-       startGame();
-       return; // Prevent key press from affecting the first obstacle immediately
+        startGame();
+        return; // Prevent key press from affecting the first obstacle immediately
   }
 
   // Handle restart
@@ -206,13 +208,13 @@ function keyPressed() {
       player.triggerJump(); // Make player do a small hop
       currentTargetObstacle.cleared = true; // Mark obstacle as cleared
       currentTargetObstacle.isTarget = false; // No longer the target
-      lastCorrectPressFrame = frameCount; // For visual feedback
+      lastCorrectPressFrame = frameCount; // For obstacle color feedback
       currentTargetObstacle = null; // Clear target immediately
       // Maybe add a sound effect here
     } else {
        // --- Wrong Key ---
        if (/[a-z0-9]/.test(pressedKey)) { // Only trigger game over for actual letter/number keys
-            gameOver('wrong key');
+           gameOver('wrong key');
        }
     }
   }
@@ -432,10 +434,21 @@ class Player {
     fill(marioColors.skin);
     rect(0, -this.h * 0.35, this.w * 0.6, this.h * 0.3); // Face
 
-    // Hat
-    fill(marioColors.red);
-    rect(0, -this.h * 0.4, this.w * 0.7, this.h * 0.15); // Main hat part
-    rect(0, -this.h * 0.3, this.w * 0.8, this.h * 0.1); // Brim
+    // Hat (Wizard Style) - MODIFICADO
+    fill(marioColors.black); // Usar preto
+
+    // Brim (Aba) - Um retângulo um pouco mais largo
+    rect(0, -this.h * 0.4, this.w * 0.9, this.h * 0.1); // y ligeiramente mais baixo que o início do cone, largura maior
+
+    // Pointy Part (Parte Pontuda) - Um triângulo alto
+    let hatBaseY = -this.h * 0.4; // Base do cone na mesma altura da aba
+    let hatTipY = -this.h * 0.9; // Ponta bem mais alta
+    let hatWidth = this.w * 0.7; // Largura da base do cone
+    triangle(
+      -hatWidth / 2, hatBaseY, // Ponto esquerdo da base
+       hatWidth / 2, hatBaseY, // Ponto direito da base
+       0, hatTipY             // Ponta do chapéu (centralizada)
+    );
 
 
     pop();
@@ -501,7 +514,7 @@ class Obstacle {
     let keyXpos = this.x + this.w / 2; // Center horizontally
 
     // Draw background for key if it's the target or recently cleared
-     if (this.isTarget || (this.cleared && frameCount - lastCorrectPressFrame < 15)) {
+     if (this.isTarget || (this.cleared && frameCount - lastCorrectPressFrame < 15)) { // Still use lastCorrectPressFrame here for key feedback
         fill(environmentColors.keyBg);
         ellipse(keyXpos, keyYpos, keyTextSize * 1.8, keyTextSize * 1.8); // Circle background
     }
